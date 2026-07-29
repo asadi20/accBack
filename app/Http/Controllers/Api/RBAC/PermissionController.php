@@ -78,4 +78,16 @@ class PermissionController extends Controller
             'message' => 'permission updated successfully.',
         ], 200);
     }
+
+    public function destroy($id)
+    {
+        $perm = Permission::findOrFail($id);
+        $perm->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Permission deleted successfully.'
+        ]);
+
+    }
 }
