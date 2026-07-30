@@ -2,6 +2,7 @@
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -419,5 +420,69 @@ describe('update', function () {
             'name' => 'users-create',
             'guard_name' => 'web'
         ]);
+    });
+});
+
+describe('destroy', function () {
+    it('deletes a permission successfully', function () {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $permission = Permission::create([
+            'name' => 'users-create',
+            'guard_name' => 'api'
+        ]);
+
+        $response = $this->deleteJson("/api/rbac/permissions/{$permission->id}");
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Permission deleted successfully.'
+            ]);
+
+        $this->assertDatabaseMissing('permissions', [
+            'id' => $permission->id
+        ]);
+    });
+
+    it('returns 404 when permission does not exist', function () {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+        $response = $this->deleteJson("/api/rbac/permissions/999");
+        $response->assertStatus(404);
+    });
+
+    it('prevents guests from deleting a permission', function () {
+        $permission = Permission::create([
+            'name' => 'users-create',
+            'guard_name' => 'api'
+        ]);
+
+        $response = $this->deleteJson("/api/rbac/permissions/{$permission->id}");
+        $response->assertStatus(401);
+    });
+
+    it('deletes a permission even if assigned to a role', function () {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $role = Role::create([
+            'name' => 'Admin',
+            'guard_name' => 'api'
+        ]);
+
+        $permission = Permission::create([
+            'name' => 'users-create',
+            'guard_name' => 'api'
+        ]);
+
+        $role->givePermissionTo($permission);
+
+        $response = $this->deleteJson("/api/rbac/permissions/{$permission->id}");
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseMissing('permissions', ['id' => $permission->id]);
     });
 });
