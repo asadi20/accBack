@@ -18,7 +18,7 @@ class RoleController extends Controller
         return response()->json([
             'success' => true,
             'data' => $roles,
-            'message' => 'all roles retrived successfully.'
+            'message' => 'all roles retrieved successfully.'
         ], 200);
     }
 
@@ -27,6 +27,8 @@ class RoleController extends Controller
         $validated = $request->validate([
             'name' => [
                 'required',
+                'string',
+                'max:255',
                 Rule::unique('roles')->where(function ($query) use ($request) {
                     return $query->where('guard_name', $request->guard_name);
                 }),
@@ -54,7 +56,7 @@ class RoleController extends Controller
         ];
 
         return response()->json([
-            'message' => 'requested role with all related permissions are retrived successfully.',
+            'message' => 'requested role with all related permissions are retrieved successfully.',
             'data' => $res,
             'errors' => null
         ], 200);
@@ -94,7 +96,7 @@ class RoleController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'faied to update role with related permissions',
+                'message' => 'failed to update role with related permissions',
                 'error' => $e->getMessage()
             ]);
         }
