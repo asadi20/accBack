@@ -4,6 +4,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 uses(RefreshDatabase::class);
 
@@ -179,5 +180,67 @@ describe('store', function () {
 
         $response = $this->postJson('/api/rbac/roles', $payload);
         $response->assertStatus(422)->assertJsonValidationErrors(['name']);
+    });
+});
+
+describe('update', function () {
+    it('update roles and permissions with valid data', function () {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $perm1 = Permission::create([
+            'name' => 'users-view',
+            'guard_name' => 'api'
+        ]);
+
+        $perm2 = Permission::create([
+            'name' => 'users-create',
+            'guard_name' => 'api'
+        ]);
+
+        $role = Role::create([
+            'name' => 'old_role',
+            'guard_name' => 'api'
+        ]);
+
+
+        $rolPermPayload = [
+            'name' => 'admin',
+            'guard_name' => 'api',
+            'permIds' => [$perm1->id, $perm2->id],
+        ];
+
+        $response = $this->putJson("/api/rbac/roles/{$role->id}", $rolPermPayload);
+
+        $response
+            ->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'id' => $role->id,
+                    'name' => 'admin',
+                    'permissions' => [
+                        [
+                            'id' => $perm1->id,
+                            'name' => $perm1->name,
+                            'guard_name' => $perm1->guard_name,
+                            'pivot' => [
+                                'role_id' => $role->id,
+                                'permission_id' => $perm1->id
+                            ]
+                        ],
+                        [
+                            'id' => $perm2->id,
+                            'name' => $perm2->name,
+                            'guard_name' => $perm2->guard_name,
+                            'pivot' => [
+                                'role_id' => $role->id,
+                                'permission_id' => $perm2->id
+                            ]
+                        ]
+                    ]
+                ],
+                'message' => 'role and related permissions updated successfully'
+            ]);
     });
 });
