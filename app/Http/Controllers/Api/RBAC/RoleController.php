@@ -71,36 +71,25 @@ class RoleController extends Controller
             'permIds.*' => 'exists:permissions,id'
         ]);
 
-        try {
-            $role = DB::transaction(function () use ($validated, $id) {
-                $role = Role::findOrFail($id);
-                // 1. update Role with validated $request array
-                $role->update([
-                    'name' => $validated['name'],
-                    'guard_name' => $validated['guard_name']
-                ]);
-                // 2.update permissions if exists.
-                if (isset($validated['permIds'])) {
-                    $role->syncPermissions($validated['permIds']);
-                }
-                // 3.!! return update Model not a response
-                return $role->load('permissions');
-            });
-            // 4.return a response
-            return response()->json([
-                'success' => true,
-                'message' => 'role and related permissions updated successfully',
-                'data' => $role
-            ], 200);
-
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'failed to update role with related permissions',
-                'error' => $e->getMessage()
+        $role = DB::transaction(function () use ($validated, $id) {
+            $role = Role::findOrFail($id);
+            // 1. update Role with validated $request array
+            $role->update([
+                'name' => $validated['name'],
+                'guard_name' => $validated['guard_name']
             ]);
-        }
-
-
+            // 2.update permissions if exists.
+            if (isset($validated['permIds'])) {
+                $role->syncPermissions($validated['permIds']);
+            }
+            // 3.!! return update Model not a response
+            return $role->load('permissions');
+        });
+        // 4.return a response
+        return response()->json([
+            'success' => true,
+            'message' => 'role and related permissions updated successfully',
+            'data' => $role
+        ], 200);
     }
 }
