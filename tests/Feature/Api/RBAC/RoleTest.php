@@ -243,4 +243,29 @@ describe('update', function () {
                 'message' => 'role and related permissions updated successfully'
             ]);
     });
+
+    it('prevents guests from updating', function () {
+        $payload = [
+            'name' => 'admin',
+            'guard_name' => 'api',
+            'permsIds' => [1, 2]
+        ];
+
+        $response = $this->putJson('/api/rbac/roles/1', $payload);
+        $response->assertStatus(401);
+    });
+
+    it('returns 404 for non-existing role', function () {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $payload = [
+            'name' => 'admin',
+            'guard_name' => 'api'
+        ];
+
+        $response = $this->putJson('/api/rbac/roles/1', $payload);
+        $response->assertStatus(404);
+
+    });
 });
