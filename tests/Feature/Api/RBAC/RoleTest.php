@@ -268,4 +268,32 @@ describe('update', function () {
         $response->assertStatus(404);
 
     });
+
+    it('update role with valid data', function () {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $role = Role::create([
+            'name' => 'adminUpdate',
+            'guard_name' => 'api'
+        ]);
+
+        $payload = [
+            'name' => 'admin',
+            'guard_name' => 'api'
+        ];
+
+        $response = $this->putJson("/api/rbac/roles/{$role->id}", $payload);
+        $response
+            ->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'name' => 'admin',
+                    'guard_name' => 'api'
+                ],
+                'message' => 'role and related permissions updated successfully'
+            ]);
+    });
+
 });
